@@ -1,0 +1,158 @@
+# List of phrases that should result in "Met" even if initially marked as "Not Met"
+phrases_to_mark_met = [
+    "The agent was polite and professional throughout the conversation.",
+    "The agent was polite, professional, and helpful throughout the conversation.",
+    "The agent remained polite and understanding.",
+    "The agent apologized for the inconvenience and offered to transfer the call to the correct department.",
+    "The agent acknowledged the customer's frustration and offered solutions.",
+    "The agent tried to explain the bank's policy on auto debit failure.",
+    "The agent was polite, patient, and helpful throughout the conversation.",
+    " no evidence of ",
+    "The agent was trying to be helpful but kept repeating the same information.",
+    "The agent is slightly confused by the customer's request but tries to understand it.",
+    "The agent was polite and empathetic throughout the conversation.",
+    "The agent is simply trying to provide information about their availability.",
+    "The agent demonstrated patience and understanding, even when the customer struggles to express themself clearly.",
+    "The agent remains professional and empathetic throughout the conversation.",
+    "the agent remained polite and understanding",
+    "the agent remains professional and empathetic throughout the conversation",
+    "it doesn't fall into rude or sarcastic behavior",
+    "the agent is simply trying to provide information",
+    "this statement isn't rude or sarcastic",
+    "the agent was trying to be helpful",
+    "which might have come across as dismissive or insincere to the customer",
+    "not rude or sarcastic",
+    "understanding and empathetic",
+    "polite and professional",
+    "patient throughout the conversation",
+    "apologized for the inconvenience",
+    "acknowledged the customer's frustration",
+    "no rude or sarcastic statements",
+    "polite, professional and understanding",
+    "provided a solution",
+    "offered a solution",
+    "agent's tone was professional",
+    "positive tone",
+    "calm and positive tone",
+    "reassured the customer",
+    "empathy and offered solutions",
+    "difficult to determine with certainty if this was intended to be dismissive",
+    "explained the situation clearly",
+    "assured the customer",
+    "patient, understanding, and empathetic",
+    "proactively resolved the issue",
+    "tone is apologetic and understanding",
+    "no instances of rude or sarcastic language",
+    "entire conversation remains professional",
+    'the agent remained professional and helpful',
+    "did not show any signs of rudeness or sarcasm",
+    " no indication of rudeness or sarcasm",
+    "was polite and helpful",
+    "not a dismissive statement",
+    "rather than being rude",
+    " agent was polite in tone",
+    " tone is polite and apologetic",
+    "intent may not have been",
+    "was generally ",
+    "overtly",
+    "was consistently polite",
+    "overall tone is polite",
+    "dismissive",
+    "unintentional",
+    "maintains",
+    "intent",
+    "repetition",
+    "repeat",
+    "provide the chat transcript",
+    "I need the conversation",
+    "There is no conversation",
+    "Conversation is not enough to evaluate the chat transcript for Rude and sarcasm"
+]
+
+hold_phrases = [
+    "hold पर रख सकती हूं", "1 मिनट के लिए hold पर रख सकती हूं",
+    "एक मिनट के लिए hold पर रखें", "hold करें",
+    "1 मिनट के लिए hold पर रखो", "1 मिनट के लिए hold करें",
+    "hold करें ",
+    "संबंधित टीम को आपकी चिंता को आगे बढ़ाने के लिए", "एक minute के लिए hold",
+    "1 minute के लिए hold",
+    "call hold", "एक second थोड़ा hold", "1 minute",
+    "call एक minute के लिए hold", "एक second थोड़ा hold करिए",
+    "एक second sir", "एक second", "call को hold", "just hold on",
+    "एक minute के लिए थोड़ा hold",
+    "थोड़ा hold", "के लिए hold", "बस hold", "hold में रहिए", "Hold पर",
+    "on hold for a minute", "place your call on hold for 1 minute",
+    "stay on hold for a minute",
+    "line for 1 minute", "hold for a minute", "hold for 1 minute",
+    "be on the line for a minute",
+    "forward your concern to the relevant team", "on hold", "minute hold",
+    "call hold", "1 minute",
+    "just hold on", "allow me a second", "allow me a moment", "May I just place your call on hold"
+]
+no_hold_phrases = ["hold के लिए", "for being on hold", "for staying on hold",
+                   "the long hold", "hold पर रहने के लिए", "Line पर बने रहने के लिए",
+                   "Hold पर बने रहने", 'hold पर रखा', 'Hold पर बने रहने के लिए', 'call hold पर हो गया',
+                   'Sorry to keep you on long hold', 'has put your call on hold', 'forward',
+                   "Hold पर बने रहने के लिए धन्यवाद", 'transfer', 'connect']
+
+duration_patterns = [
+    r'\b1 minute\b',
+    r'\b1 à¤®à¤¿à¤¨à¤Ÿ\b',
+    r'\bà¤à¤• minute\b',
+    r'\bà¤à¤• à¤®à¤¿à¤¨à¤Ÿ\b',
+    r'\ba minute\b',
+    r'\bà¤à¤• à¤”à¤° minute\b'
+]  # Define patterns to check for required duration
+
+# Define "thank you for holding" phrases in English and Hindi
+thank_you_phrases = [
+    r'\bthank you for holding\b',
+    r'\bthank you for hold\b',
+    r'\bthank you for being on hold\b',
+    r'\bthanks for being on hold\b',
+    r'\bà¤†à¤ªà¤•à¥‡ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¥‡ à¤²à¤¿à¤ à¤§à¤¨à¥à¤¯à¤µà¤¾à¤¦\b',
+    r'\bà¤§à¤¨à¥à¤¯à¤µà¤¾à¤¦ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¥‡ à¤²à¤¿à¤\b',
+    r'\bà¤§à¤¨à¥à¤¯à¤µà¤¾à¤¦ sir\b',
+    r'\bSorry for the long hold\b',
+    r'\bà¤°à¤¹à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤§à¤¨à¥à¤¯à¤µà¤¾à¤¦\b',
+    r'\bHold à¤ªà¤°\b',
+    r'\bline à¤ªà¤° à¤¬à¤¨à¥‡ à¤°à¤¹à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤\b'
+]
+
+# Define the survey and feedback phrases
+survey_phrases = [
+    "We request you to rate your experience with our expert on a scale of 1 to 5",
+    "Please press the number on your dial pack to rate."
+]
+
+feedback_phrases = [
+    "May I request you to share your valuable feedback",
+    "I will be transferring the call to the feedback IVR",
+    "Can I transfer the call to the survey IVR",
+    "क्या आप अपना बहुमूल्य फीडबैक साझा करेंगे?",
+    "क्या मैं कॉल को सर्वेक्षण आईवीआर में ट्रांसफर कर सकता हूँ?",
+    "हमारी बातचीत को रेट करें",
+    "आपकी राय हमारे लिए महत्वपूर्ण है",
+    "हमारी इस बातचीत के आधार पर आपका valuable feedback share करने के लिए"
+]
+
+disconnect_phrases_en = [
+    "you can disconnect the call",
+    "kindly hang up the phone",
+    "please cut the call",
+    "Kindly end the call"
+]
+
+disconnect_phrases_hi = [
+    "कृपया कॉल काट दीजिये",
+    "कृपया फोन बंद कर दीजिये",
+    "फोन काट दें",
+    "कृपया कॉल रख दीजिये"
+]
+
+verbiage_phrases = {
+    'disconnection_verbiage_1': "As there is no response from your side, I am going ahead and disconnecting the call.",
+    'disconnection_verbiage_2': "As there is no response from your side, I am going ahead and disconnecting the call.",
+    'disconnection_verbiage_3': "As there is no response from your side, I am going ahead and disconnecting the call. "
+                                "Thank you for your time, and have a great day/evening ahead."
+}

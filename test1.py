@@ -1,4 +1,4 @@
-from main import get_brcp_result
+from main import get_softskill_result
 
-respone = get_brcp_result()
-print(respone)
+response = get_softskill_result()
+print(response)

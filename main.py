@@ -10,7 +10,6 @@ from ZulipMessenger import reportTranscriptGenerated, reportError, reportStatus
 from analyseData import analyse_data_using_gemini_for_brcp, analyse_data_for_soft_skill
 from fetchData import fetch_data_from_database, upload_cred_result_on_database, fetch_data_softskill, \
     is_latest_uid_present, INPUT_DATABASE, fetchInteractionRoaster_forBrcp, get_created_on_by_uid
-from resources.working_with_files import get_time
 
 app = FastAPI()
 
@@ -19,6 +18,7 @@ def fetch_api_result(uid: str, max_retries=100, retry_delay=5):
     """Fetch API result from external service with retry mechanism."""
     url = f"https://tmc.wyzmindz.com/CredASR/api/CredASR/FetchResultFromVocab?uploaded_id={uid}"
     headers = {"accept": "*/*"}
+    errorCombined = []
 
     for attempt in range(1, max_retries + 1):
         start_time = time.time()
@@ -40,15 +40,19 @@ def fetch_api_result(uid: str, max_retries=100, retry_delay=5):
 
         except requests.Timeout:
             print(f"Attempt {attempt}: API request timed out. Retrying in {retry_delay} seconds...")
+            errorCombined.append(f"Attempt {attempt}: API request timed out. Retrying in {retry_delay} seconds...")
         except requests.ConnectionError:
+            errorCombined.append(f"Attempt {attempt}: Connection error. Retrying in {retry_delay} seconds...")
             print(f"Attempt {attempt}: Connection error. Retrying in {retry_delay} seconds...")
         except requests.RequestException as e:
+            errorCombined.append(str(e))
             print(f"Attempt {attempt}: Unexpected error - {e}")
             return {"status": "Error", "message": str(e)}
 
         if attempt < max_retries:
             time.sleep(retry_delay)
-    error = {"status": "Failed", "message": f"API request failed after {max_retries} attempts"}
+    error = {"status": "Failed", "message": f"API request failed after {max_retries} attempts",
+             "ErrorStatement": errorCombined}
     reportError(error)
 
     return error
@@ -65,7 +69,8 @@ def generate_output_brcp(uid, created_on):
             return {"status": "Failed", "message": error_msg}
 
         # Analyze data using Gemini model
-        final_df = analyse_data_using_gemini_for_brcp(df, uid)
+        date = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y %H:%M")
+        final_df = analyse_data_using_gemini_for_brcp(df, uid, date)
 
         if final_df.empty or final_df is None:
             error_msg = "Data analysis failed. The output DataFrame is either missing or incorrect."
@@ -160,9 +165,10 @@ def get_brcp_result():
     return status
 
 
-@app.post("/brcp/generate/{uid}")
-def get_brcp_result_generate(uid):
+@app.post("/brcp/generateAnalyse/{uid}")
+def get_brcp_result_generate_analyse_uid(uid):
     created_on = get_created_on_by_uid(INPUT_DATABASE, uid)
+    reportStatus(f"Generating and Analysing for UID {uid} created on {created_on}")
     if uid:
         transmon_response = fetch_api_result(uid)
         gemini_response = generate_output_brcp(uid, created_on)
@@ -173,9 +179,11 @@ def get_brcp_result_generate(uid):
         reportError(status)
     return status
 
+
 @app.post("/brcp/analyse/{uid}")
 def get_brcp_result_analyse(uid):
     created_on = get_created_on_by_uid(INPUT_DATABASE, uid)
+    reportStatus(f"Analysing for UID {uid} created on {created_on}")
     if uid:
         gemini_response = generate_output_brcp(uid, created_on)
         status = {"TransmonResponse": "Already in DB", "GeminiResponse": gemini_response}
@@ -186,6 +194,18 @@ def get_brcp_result_analyse(uid):
     return status
 
 
+@app.post("brcp/generate/{uid}")
+def get_brcp_result_generate(uid):
+    created_on = get_created_on_by_uid(INPUT_DATABASE, uid)
+    reportStatus(f"Only Generating transcripts for UID {uid} created on {created_on}")
+    if uid:
+        transmon_response = fetch_api_result(uid)
+        status = {"TransmonResponse": transmon_response}
+        reportStatus(status)
+    else:
+        status = {"status": "Fetching latest Upload ID Failed", "message": "Upload Id not found"}
+        reportError(status)
+    return status
 
 
 def generate_output_softskill(date: str):
@@ -226,6 +246,15 @@ def get_softskill_result():
 
     return {"database response": softskill_response}
 
+
+@app.get("/softskill/analyse/{date}")
+def get_softskill_result_by_date(date):
+    print("req date in IST:", date)
+    reportStatus(f"Starting Softskill Parameter for {date}")
+    softskill_response = generate_output_softskill(date)
+    reportStatus(softskill_response)
+
+    return {"database response": softskill_response}
 
 # response = get_softskill_result()
 # print(response)

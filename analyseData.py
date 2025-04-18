@@ -17,7 +17,7 @@ from resources.working_with_files import merge_dataframes, validate_SOFTSKILL_da
     REQUIRED_COLUMNS_SOFTSKILL, validate_brcp_dataframe, REQUIRED_COLUMNS_BRCP
 
 
-def analyse_data_using_gemini_for_brcp(df, uid):
+def analyse_data_using_gemini_for_brcp(df, uid, date):
     # Step 1: Sarcasm & Rudeness Classification
     rude_columns = ['Sarcasm_rude_behaviour', 'Sarcasm_rude_behaviour_evidence']
     RudeSarcastic_res_df = process_classification(classify_rude_sarcastic, df, rude_columns, "Rude and Sarcastic")
@@ -46,7 +46,7 @@ def analyse_data_using_gemini_for_brcp(df, uid):
 
     CRED_FINAL_OUTPUT.replace('nan', 'N/A', inplace=True)
 
-    CRED_FINAL_OUTPUT['Today_Date'] = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y %H:%M")
+    CRED_FINAL_OUTPUT['Today_Date'] = date
     for index, row in CRED_FINAL_OUTPUT.iterrows():
         if row['Wanted_to_connect_with_supervisor'] == "No":
             for col in ['de_escalate', 'Supervisor_call_connected', 'call_back_arranged_from_supervisor',
@@ -317,6 +317,7 @@ def analyse_data_for_soft_skill(primaryInfo_df, transcript_df, transcriptChat_df
     is_valid, missing_cols, extra_cols = validate_SOFTSKILL_dataframe(CRED_FINAL_OUTPUT)
 
     if is_valid:
+        CRED_FINAL_OUTPUT["uploaded_date"] = date
         print(CRED_FINAL_OUTPUT)
         reportStatus(f"✅ CRED Final Output is merged and validated")
         response = upload_softskill_result_on_database(CRED_FINAL_OUTPUT, date)

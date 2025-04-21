@@ -131,7 +131,7 @@ def classify_supervisor(df: pd.DataFrame, request_ids=None):
     return pd.DataFrame(results), errors
 
 
-def retry_classification(main_df, parameter_df, classify_func, error_ids, columns, max_retries=20):
+def retry_classification(main_df, parameter_df, classify_func, error_ids, columns, max_retries=25):
     """
     Retries classification for failed request IDs up to a maximum of 20 times.
 
@@ -494,31 +494,27 @@ def classifyChatOpening(df: pd.DataFrame, request_ids=None):
             if ERROR_DUE_TO_LONG_CALL_TRANSCRIPT in error_message:
                 results.append({
                     'request_id': request_id,
-                    'Further Assistance Evidence': "An unexpected error occurred on Google's side. Your input context "
+                    'Greeting_the_customer': "An unexpected error occurred on Google's side. Your input context "
                                                    "is too long.",
-                    'Effective IVR Survey': "Error 500",
-                    'Effective IVR Survey Evidence': "An unexpected error occurred on Google's side. Your input "
+                    'Greeting_the_customer_evidence': "Error 500",
+                    'Self_introduction': "An unexpected error occurred on Google's side. Your input "
                                                      "context is too long.",
-                    'Branding': "Error 500",
-                    'Branding Evidence': "An unexpected error occurred on Google's side. Your input context is too "
+                    'Self_introduction_evidence': "Error 500",
+                    'Identity_confirmation': "An unexpected error occurred on Google's side. Your input context is too "
                                          "long.",
-                    'Greeting': "Error 500",
-                    'Greeting Evidence': "An unexpected error occurred on Google's side. Your input context is too "
-                                         "long."
+                    'Identity_confirmation_evidence': "Error 500"
 
                 })
             else:
                 print(f"Error processing request_id {request_id}: {e}")
                 results.append({
                     'request_id': request_id,
-                    'Further Assistance': "Error",
-                    'Further Assistance Evidence': str(e),
-                    'Effective IVR Survey': "Error",
-                    'Effective IVR Survey Evidence': str(e),
-                    'Branding': "Error",
-                    'Branding Evidence': str(e),
-                    'Greeting': "Error",
-                    'Greeting Evidence': str(e)
+                    'Greeting_the_customer': "Error",
+                    'Greeting_the_customer_evidence': str(e),
+                    'Self_introduction': "Error",
+                    'Self_introduction_evidence': str(e),
+                    'Identity_confirmation': "Error",
+                    'Identity_confirmation_evidence': str(e)
                 })
 
     return pd.DataFrame(results), errors

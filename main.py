@@ -69,8 +69,7 @@ def generate_output_brcp(uid, created_on):
             return {"status": "Failed", "message": error_msg}
 
         # Analyze data using Gemini model
-        date = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y %H:%M")
-        final_df = analyse_data_using_gemini_for_brcp(df, uid, date)
+        final_df = analyse_data_using_gemini_for_brcp(df, uid, created_on)
 
         if final_df.empty or final_df is None:
             error_msg = "Data analysis failed. The output DataFrame is either missing or incorrect."
@@ -194,7 +193,7 @@ def get_brcp_result_analyse(uid):
     return status
 
 
-@app.post("brcp/generate/{uid}")
+@app.post("/brcp/generate/{uid}")
 def get_brcp_result_generate(uid):
     created_on = get_created_on_by_uid(INPUT_DATABASE, uid)
     reportStatus(f"Only Generating transcripts for UID {uid} created on {created_on}")
@@ -238,7 +237,7 @@ def generate_output_softskill(date: str):
 @app.get("/softskill")
 def get_softskill_result():
     ist = pytz.timezone('Asia/Kolkata')
-    date = (datetime.now(ist) - timedelta(days=1)).date()
+    date = (datetime.now(ist) - timedelta(days=2)).date()
     print("req date in IST:", date)
     reportStatus(f"Starting Softskill Parameter for {date}")
     softskill_response = generate_output_softskill(date)
@@ -256,5 +255,3 @@ def get_softskill_result_by_date(date):
 
     return {"database response": softskill_response}
 
-# response = get_softskill_result()
-# print(response)

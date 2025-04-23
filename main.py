@@ -9,7 +9,9 @@ from fastapi import FastAPI
 from ZulipMessenger import reportTranscriptGenerated, reportError, reportStatus
 from analyseData import analyse_data_using_gemini_for_brcp, analyse_data_for_soft_skill
 from fetchData import fetch_data_from_database, upload_cred_result_on_database, fetch_data_softskill, \
-    is_latest_uid_present, INPUT_DATABASE, fetchInteractionRoaster_forBrcp, get_created_on_by_uid
+    is_latest_uid_present, INPUT_DATABASE, fetchInteractionRoaster_forBrcp, get_created_on_by_uid, \
+    fetchSoftskillOpsguru, fetchBrcpOpsguru, fetchInteractionOpsguru, fetchRoster
+from resources.working_with_files import createDfOpsguru
 
 app = FastAPI()
 
@@ -237,7 +239,7 @@ def generate_output_softskill(date: str):
 @app.get("/softskill")
 def get_softskill_result():
     ist = pytz.timezone('Asia/Kolkata')
-    date = (datetime.now(ist) - timedelta(days=2)).date()
+    date = (datetime.now(ist) - timedelta(days=1)).date()
     print("req date in IST:", date)
     reportStatus(f"Starting Softskill Parameter for {date}")
     softskill_response = generate_output_softskill(date)
@@ -254,4 +256,34 @@ def get_softskill_result_by_date(date):
     reportStatus(softskill_response)
 
     return {"database response": softskill_response}
+
+@app.get('/opsguru')
+def getOpsguruResult():
+    response = {}
+    # Get yesterday's date in Indian format (DD-MM-YYYY)
+    yesterday = datetime.now() - timedelta(days=1)
+    # Convert explicitly to Year-Month-Day (YYYY-MM-DD) format
+    yesterday_ymd = yesterday.strftime('%Y-%m-%d')
+    print(yesterday_ymd)  # Example Output: 2025-04-02
+
+    softskill, softskillResponse = fetchSoftskillOpsguru(yesterday_ymd)
+    response['softskill'] = softskillResponse
+    brcp, BrcpResponse = fetchBrcpOpsguru(yesterday_ymd)
+    brcp = brcp.drop(['TL_Email_Id', 'Location'], axis=1)
+
+    response['brcp'] = BrcpResponse
+    interaction, interactionResponse = fetchInteractionOpsguru(yesterday_ymd)
+    response['interaction'] = interactionResponse
+    roster, rosterResponse = fetchRoster()
+    response['roster'] = rosterResponse
+
+    if all([df is not None and not df.empty for df in [softskill, brcp, interaction, roster]]):
+        print("All DataFrames have data!")
+        OpsGuru_df = createDfOpsguru(softskill, brcp, interaction, roster, yesterday_ymd)
+        # OpsGuru_df.to_excel(f"Opsguru_data_{yesterday_ymd}.xlsx"/
+    else:
+        print("Some DataFrames are empty or None!")
+
+
+
 

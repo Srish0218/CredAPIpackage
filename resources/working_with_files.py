@@ -138,7 +138,7 @@ def calculate_aht(duration):
     except Exception as e:
         print(f"Error in AHT calculation: {e}")
         return "Error"
-def createDfOpsguru(soft_skill_df, brcp_df, interaction_df, roaster_df):
+def createDfOpsguru(soft_skill_df, brcp_df, interaction_df, roaster_df, date):
     if brcp_df is not None and not brcp_df.empty:
         brcp_df = brcp_df.drop(columns=["request_id", "Today_Date"], errors="ignore")
         soft_skill_brcp_df = pd.merge(soft_skill_df, brcp_df, on="conversation_id", how="inner")
@@ -211,5 +211,6 @@ def createDfOpsguru(soft_skill_df, brcp_df, interaction_df, roaster_df):
     soft_skill_brcp_interaction_roaster_df = soft_skill_brcp_interaction_roaster_df[final_columns]
     soft_skill_brcp_interaction_roaster_df.fillna("N/A", inplace=True)
     soft_skill_brcp_interaction_roaster_df.drop_duplicates()
+    soft_skill_brcp_interaction_roaster_df['Uploaded_Date'] = date
     return soft_skill_brcp_interaction_roaster_df
 

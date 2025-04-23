@@ -375,3 +375,111 @@ def is_uid_already_processed(uid):
     all_uids = get_all_primaryinfo_uids()
     return uid in all_uids
 
+
+
+def fetchSoftskillOpsguru(date):
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_connection(OUTPUT_DATABASE)
+
+            if not conn:
+                raise Exception("Database connection failed!")
+
+            query = f"""
+                SELECT * 
+                FROM softskill WHERE CONVERT(DATE, TRY_CAST(uploaded_date AS DATETIME)) = ?
+            """
+            df = pd.read_sql_query(query, conn, params=(date,))
+
+            return df, "Data Fetching Success"
+
+        except Exception as e:
+            reportError(f"[Attempt {attempt}/{max_retries}] Error: {e}")
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            if conn:
+                conn.close()
+
+    return None, "Data fetching failed after retries!"
+
+def fetchBrcpOpsguru(date):
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_connection(OUTPUT_DATABASE)
+
+            if not conn:
+                raise Exception("Database connection failed!")
+
+            query = """
+SELECT *
+FROM brcpData 
+WHERE CONVERT(DATE, TRY_PARSE(Today_Date AS DATETIME USING 'en-GB')) = ?
+            """
+            df = pd.read_sql_query(query, conn, params=(date,))
+
+            return df, "Data Fetching Success"
+
+        except Exception as e:
+            reportError(f"[Attempt {attempt}/{max_retries}] Error: {e}")
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            if conn:
+                conn.close()
+
+    return None, "Data fetching failed after retries!"
+
+
+def fetchInteractionOpsguru(date):
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_connection(OUTPUT_DATABASE)
+
+            if not conn:
+                raise Exception("Database connection failed!")
+
+            query = f"""
+                SELECT * 
+                FROM interactiondb WHERE CONVERT(DATE, TRY_CAST(updated_at AS DATETIME)) = ?
+            """
+            df = pd.read_sql_query(query, conn, params=(date,))
+
+            return df, "Data Fetching Success"
+
+        except Exception as e:
+            reportError(f"[Attempt {attempt}/{max_retries}] Error: {e}")
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            if conn:
+                conn.close()
+
+    return None, "Data fetching failed after retries!"
+
+
+def fetchRoster():
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_connection(OUTPUT_DATABASE)
+
+            if not conn:
+                raise Exception("Database connection failed!")
+
+            query = f"""
+                SELECT * 
+                FROM ROSTER 
+            """
+            df = pd.read_sql_query(query, conn)
+
+            return df, "Data Fetching Success"
+
+        except Exception as e:
+            reportError(f"[Attempt {attempt}/{max_retries}] Error: {e}")
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            if conn:
+                conn.close()
+
+    return None, "Data fetching failed after retries!"

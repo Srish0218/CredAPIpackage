@@ -16,7 +16,7 @@ def getOpsguruResult():
 
     softskill, softskillResponse = fetchSoftskillOpsguru(yesterday_ymd)
     response['softskill'] = softskillResponse
-    # softskill=pd.read_csv(r'softskill_15April.csv')
+    # softskill =pd.read_csv(r'softskill_15April.csv')
     brcp, BrcpResponse = fetchBrcpOpsguru(yesterday_ymd)
     brcp = brcp.drop(['TL_Email_Id', 'Location'], axis=1)
 

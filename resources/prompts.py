@@ -23,7 +23,7 @@ escalation_prompt = """
         5. **Agent Handling Capability:**
            - Evaluate the agent’s ability to manage the interaction effectively, including their communication skills and problem-solving abilities.
 
-        6. Escalation Category Selection (Strictly Use One from the List Below):**
+        6. **Escalation Category Selection (Strictly Use One from the List Below):**
             - Unresolved financial issues & Delays
             - Perceived injustice or unfairness in policies
             - Threats of public exposure
@@ -31,7 +31,19 @@ escalation_prompt = """
             - Emotional Distress & Mental Health Impact
             - Repeated Failures & Pattern of issues
             - Others
+        
+         7. **Escalation Keyword:**
+            - If any of the above keywords are mentioned in the transcript or any abusive word is used, it as the output.
 
+        8. **Short Escalation Reason (Strictly Use One from the List Below and map it in the same order with that in the Escalation Category):**
+            - Financial issues like delayed refunds, failed transactions, and financial consequences
+            - Dissatisfaction with policy changes, lack of communication, or inaccurate information
+            - Threats to escalate via social media or negative reviews
+            - Aggressive collection tactics or harassment by third-party service providers
+            - Severe emotional distress or mentions of self-harm or legal action due to unresolved issues
+            - Frustration with recurring issues or patterns of unresolved problems
+            - Others
+        
         Please structure your response in the following JSON format:
 
         ```json
@@ -42,6 +54,8 @@ escalation_prompt = """
             "Evidence": "<detailed evidence>",
             "Agent Handling Capability": "<Agent Handling Capability>",
             "Escalation Category": <Escalation Category>,
+            "Escalation Keyword": <Escalation Keyword>,
+            "Short Escalation Reason": <Short Escalation Reason>
         }
         ```
         """
@@ -78,19 +92,26 @@ Return the results in the following JSON format:
 """
 
 RudeSarcastic_prompt = """
-You are a language model designed to detect rude or sarcastic phrases in text. Your primary responsibility is to comprehensively and contextually evaluate the chat transcript between the agent and the customer.
+You are a language model designed to detect rude or sarcastic phrases in text.
+Your primary responsibility is to evaluate the chat transcript between the agent and the customer in a comprehensive and contextual manner.
 
-**Task:**
-Analyze the conversation and determine if the agent was rude or sarcastic at any point. Rude phrases include offensive, insulting , direct denial , interrupting the customer  or disrespectful language, while sarcastic phrases involve statements that mock or convey contempt through irony. If any phrase give the sense of only rude or sarcasm then mark it as "Not Met"
+Task:
+Analyze the conversation and determine if the agent was rude or sarcastic at any point. Rude phrases include offensive, insulting, direct denial, interrupting the customer, or disrespectful language. Sarcastic phrases involve statements that mock or convey contempt through irony.
 
-**Criteria:**
-- Mark the output strictly as "Not Met" if any part of the conversation was rude or sarcastic.
-- If a solution provided by the agent was rude, also mark it as "Not Met."
-- Provide the specific statement(s) that led to your conclusion.
-- Mark the output strictly as "Met" if the agent was polite , professional , helpful , thoughtful (means agent was calm with the customer) throughout the conversation.
-- Also try to add timestamp for the rude or sarcastic phrase used by the agent.
-- If conservation is not enough to evaluate the chat transcript, mark it as "Met" and in evidence mention "Conversation is not enough to evaluate the chat transcript for Rude and sarcasm.
-**Output Format:**
+Important Clarifications:
+- Repetitive phrases like “Are you there?” or “App is working fine from our end” are NOT rude or sarcastic *unless* they are paired with a clearly dismissive, mocking, or disrespectful tone.
+- Neutral or procedural statements should be treated as professional *unless* the tone implies contempt or hostility.
+- A lack of empathy or variation in responses should *not* be considered rude by itself.
+- Do not flag as rude/sarcastic unless there is *explicit* or *clearly implied* rudeness or sarcasm.
+
+Criteria:
+- Mark the output strictly as "Not Met" *only if* any part of the conversation contains clear rude or sarcastic behavior.
+- If a solution provided by the agent was delivered rudely or sarcastically, mark as "Not Met".
+- Otherwise, mark the output as "Met" — especially if the agent remains calm, professional, helpful, or procedural throughout the chat.
+- If the conversation is too short or lacks enough context, mark as "Met" and note: "Conversation is not enough to evaluate the chat transcript for Rude and Sarcasm."
+- If direct or explicit rudeness or sarcasm is not there, mark the output as "Met".
+
+Output Format:
 Provide the response in the following JSON format:
 
 ```json
@@ -98,9 +119,10 @@ Provide the response in the following JSON format:
     "Sarcasm_rude_behaviour": "<Met/Not Met>",
     "Sarcasm_rude_behaviour_evidence": "<detailed evidence>"
 }
-
+```
 
 """
+
 
 prompt_closing = f"""
 You are a helpful and objective AI assistant. Your task is to evaluate the agent's conduct at the end of a call based on specific criteria.
@@ -329,7 +351,7 @@ Please structure your response in the following JSON format:
 }
 
 
-    """
+"""
 
 DSAT_prompt = """
 You are a customer service audit specialist. Your task is to analyze the following customer-agent interaction transcript in which customer has rated the call as dis-satisfied and given low rating.

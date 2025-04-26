@@ -28,7 +28,7 @@ REQUIRED_COLUMNS_BRCP = [
     "Probable_Reason_for_Escalation_Evidence", "Agent_Handling_Capability",
     "Wanted_to_connect_with_supervisor", "de_escalate", "Supervisor_call_connected",
     "call_back_arranged_from_supervisor", "supervisor_evidence", "Denied_for_Supervisor_call",
-    "denied_evidence", "Today_Date", "uploaded_id", "Escalation_Category"
+    "denied_evidence", "Today_Date", "uploaded_id", "Escalation_Category", "Escalation_Keyword", "Short_Escalation_Reason"
 ]
 
 
@@ -102,7 +102,8 @@ def categorize_missing_columns(missing_cols):
     """Categorize missing columns into Sarcasm, Escalation, or Supervisor related."""
     sarcasm_cols = {'Sarcasm_rude_behaviour', 'Sarcasm_rude_behaviour_evidence'}
     escalation_cols = {'escalation_results', 'Issue_Identification', 'Probable_Reason_for_Escalation',
-                       'Probable_Reason_for_Escalation_Evidence', 'Agent_Handling_Capability'}
+                       'Probable_Reason_for_Escalation_Evidence', 'Agent_Handling_Capability', 'Escalation_Category',
+                       'Escalation_Keyword', 'Short_Escalation_Reason'}
     supervisor_cols = {'Wanted_to_connect_with_supervisor', 'de_escalate', 'Supervisor_call_connected',
                        'call_back_arranged_from_supervisor', 'supervisor_evidence', 'Denied_for_Supervisor_call',
                        'denied_evidence'}
@@ -206,7 +207,8 @@ def createDfOpsguru(soft_skill_df, brcp_df, interaction_df, roaster_df, date):
         'Branding_Evidence', 'Greeting', 'Greeting_Evidence',
         'Greeting_the_customer', 'Greeting_the_customer_evidence',
         'Self_introduction', 'Self_introduction_evidence',
-        'Identity_confirmation', 'Identity_confirmation_evidence', 'Escalation_Category'
+        'Identity_confirmation', 'Identity_confirmation_evidence', 'Escalation_Category',
+        'Escalation_Keyword', 'Short_Escalation_Reason'
     ]
     soft_skill_brcp_interaction_roaster_df = soft_skill_brcp_interaction_roaster_df[final_columns]
     soft_skill_brcp_interaction_roaster_df.fillna("N/A", inplace=True)

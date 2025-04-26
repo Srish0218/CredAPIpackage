@@ -10,7 +10,7 @@ from ZulipMessenger import reportTranscriptGenerated, reportError, reportStatus
 from analyseData import analyse_data_using_gemini_for_brcp, analyse_data_for_soft_skill
 from fetchData import fetch_data_from_database, upload_cred_result_on_database, fetch_data_softskill, \
     is_latest_uid_present, INPUT_DATABASE, fetchInteractionRoaster_forBrcp, get_created_on_by_uid, \
-    fetchSoftskillOpsguru, fetchBrcpOpsguru, fetchInteractionOpsguru, fetchRoster
+    fetchSoftskillOpsguru, fetchBrcpOpsguru, fetchInteractionOpsguru, fetchRoster, uploadOpsgurudata
 from resources.working_with_files import createDfOpsguru
 
 app = FastAPI()
@@ -110,7 +110,7 @@ def generate_output_brcp(uid, created_on):
             "Wanted_to_connect_with_supervisor", "de_escalate", "Supervisor_call_connected",
             "call_back_arranged_from_supervisor", "supervisor_evidence", "Denied_for_Supervisor_call",
             "denied_evidence", "Today_Date", "uploaded_id", "Escalation_Category", "Location",
-            "TL_Email_Id", "Email_ID"
+            "TL_Email_Id", "Email_ID", "Escalation_Keyword", "Short_Escalation_Reason"
         ]
 
         # Reorder: Place desired columns first (if they exist), then all other columns
@@ -280,6 +280,33 @@ def getOpsguruResult():
     if all([df is not None and not df.empty for df in [softskill, brcp, interaction, roster]]):
         print("All DataFrames have data!")
         OpsGuru_df = createDfOpsguru(softskill, brcp, interaction, roster, yesterday_ymd)
+        uploadOpsgurudata(OpsGuru_df, table_name='OpsGuruDB')
+        print("OpsGuru Data Uploaded Successfully!")
+        # OpsGuru_df.to_excel(f"Opsguru_data_{yesterday_ymd}.xlsx"/
+    else:
+        print("Some DataFrames are empty or None!")
+
+@app.get('/opsguru/analyse/{date}')
+def getOpsguruResultByDate(date):
+    response = {}
+    print("req date in IST:", date)
+
+    softskill, softskillResponse = fetchSoftskillOpsguru(date)
+    response['softskill'] = softskillResponse
+    brcp, BrcpResponse = fetchBrcpOpsguru(date)
+    brcp = brcp.drop(['TL_Email_Id', 'Location'], axis=1)
+
+    response['brcp'] = BrcpResponse
+    interaction, interactionResponse = fetchInteractionOpsguru(date)
+    response['interaction'] = interactionResponse
+    roster, rosterResponse = fetchRoster()
+    response['roster'] = rosterResponse
+
+    if all([df is not None and not df.empty for df in [softskill, brcp, interaction, roster]]):
+        print("All DataFrames have data!")
+        OpsGuru_df = createDfOpsguru(softskill, brcp, interaction, roster, date)
+        uploadOpsgurudata(OpsGuru_df, table_name='OpsGuruDB')
+        print("OpsGuru Data Uploaded Successfully!")
         # OpsGuru_df.to_excel(f"Opsguru_data_{yesterday_ymd}.xlsx"/
     else:
         print("Some DataFrames are empty or None!")

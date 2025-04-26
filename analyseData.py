@@ -1,6 +1,7 @@
 from datetime import datetime
 import pandas as pd
 import pytz
+import spacy
 from spacy.language import Language
 from spacy_langdetect import LanguageDetector
 from ZulipMessenger import reportError, reportStatus
@@ -27,7 +28,8 @@ def analyse_data_using_gemini_for_brcp(df, uid, date):
     # Step 2: Escalation Processing
     escalation_columns = [
         'escalation_results', 'Issue_Identification', 'Probable_Reason_for_Escalation',
-        'Probable_Reason_for_Escalation_Evidence', 'Agent_Handling_Capability', "Escalation_Category"
+        'Probable_Reason_for_Escalation_Evidence', 'Agent_Handling_Capability', "Escalation_Category",
+        'Escalation_Keyword', 'Short_Escalation_Reason'
     ]
     escalation_res_df = process_classification(process_transcripts_escalation, df, escalation_columns, "Escalation")
 
@@ -54,7 +56,8 @@ def analyse_data_using_gemini_for_brcp(df, uid, date):
                 CRED_FINAL_OUTPUT.at[index, col] = "N/A"
         if row['escalation_results'] == "Met":
             for col in ['Issue_Identification', 'Probable_Reason_for_Escalation',
-                        'Probable_Reason_for_Escalation_Evidence', 'Agent_Handling_Capability', 'Escalation_Category']:
+                        'Probable_Reason_for_Escalation_Evidence', 'Agent_Handling_Capability', 'Escalation_Category',
+                        'Escalation_Keyword', 'Short_Escalation_Reason']:
                 CRED_FINAL_OUTPUT.at[index, col] = "N/A"
         if row['Sarcasm_rude_behaviour'] == "Met":
             CRED_FINAL_OUTPUT.at[

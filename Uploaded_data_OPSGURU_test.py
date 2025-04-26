@@ -7,7 +7,7 @@ from resources.working_with_files import createDfOpsguru
 def getOpsguruResult():
     response = {}
     # Get yesterday's date in Indian format (DD-MM-YYYY)
-    yesterday = datetime.now() - timedelta(days=2)
+    yesterday = datetime.now() - timedelta(days=1)
     yesterday_indian = yesterday.strftime('%d-%m-%Y')
 
     # Convert explicitly to Year-Month-Day (YYYY-MM-DD) format

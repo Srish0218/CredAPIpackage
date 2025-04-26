@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 import pandas as pd
 import pyodbc
 from ZulipMessenger import reportSuccessMsgBRCP, reportError, reportStatus, reportSuccessMsgSoftSkill
+import urllib
+from sqlalchemy import create_engine
+from sqlalchemy import text
 
 load_dotenv()
 
@@ -59,13 +62,15 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
         Probable_Reason_for_Escalation_Evidence, Agent_Handling_Capability,
         Wanted_to_connect_with_supervisor, de_escalate, Supervisor_call_connected,
         call_back_arranged_from_supervisor, supervisor_evidence, Denied_for_Supervisor_call,
-        denied_evidence, Today_Date, Uploaded_id, Escalation_Category, Location, TL_Email_Id ,Email_Id
+        denied_evidence, Today_Date, Uploaded_id, Escalation_Category, Location, TL_Email_Id ,Email_Id, 
+        Escalation_Keyword, Short_Escalation_Reason
     ) VALUES (?, ?, ?, ?,
         ?, ?, ?,
         ?, ?,
         ?, ?, ?,
         ?, ?, ?,
-        ?, ?, ?, ? ,?, ?, ?)
+        ?, ?, ?, ? ,?, ?, ?,
+        ?, ?)
     """
 
     last_error = None
@@ -483,3 +488,56 @@ def fetchRoster():
                 conn.close()
 
     return None, "Data fetching failed after retries!"
+
+def uploadOpsgurudata(df, table_name, database='OUTPUT_DATABASE', if_exists='append'):
+    try:
+        # Load connection parameters from environment
+        server = os.getenv("DB_SERVER")
+        username = os.getenv("DB_USERNAME")
+        password = os.getenv("DB_PASSWORD")
+        driver = os.getenv("DB_DRIVER", "{ODBC Driver 17 for SQL Server}")
+        db_name = os.getenv(database)
+
+        # Build the connection string
+        params = urllib.parse.quote_plus(
+            f"DRIVER={driver};"
+            f"SERVER={server};"
+            f"DATABASE={db_name};"
+            f"UID={username};"
+            f"PWD={password}"
+        )
+
+        # Create SQLAlchemy engine
+        engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
+
+        # Step 1: Clean column names in DataFrame (replace spaces with underscores)
+        original_columns = df.columns.tolist()
+        df.columns = [col.strip().replace(' ', '_') for col in df.columns]
+
+        # Step 2: Get actual DB table columns
+        with engine.connect() as connection:
+            result = connection.execute(
+                text(f"""
+                    SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = :table
+                """),
+    {"table": table_name}
+            )
+            db_columns = {row[0].lower() for row in result.fetchall()}
+
+        # Step 3: Keep only matching columns in DataFrame
+        df = df[[col for col in df.columns if col.lower() in db_columns]]
+
+        # Step 4: Log column mapping
+        print("📋 Final DataFrame columns to upload:", df.columns.tolist())
+        skipped = [col for col in original_columns if col.strip().replace(' ', '_').lower() not in db_columns]
+        if skipped:
+            print(f"⚠️ Skipping unmatched columns (not in DB): {skipped}")
+
+        # Step 5: Upload to SQL Server
+        df.to_sql(name=table_name, con=engine, index=False, if_exists=if_exists)
+        print(f"✅ Data uploaded successfully to {db_name}.{table_name}")
+
+    except Exception as e:
+        print(f"❌ Error uploading data to SQL Server: {e}")

@@ -50,8 +50,9 @@ def upload_cred_result_on_database(final_df, uid, created_on):
         Probable_Reason_for_Escalation_Evidence, Agent_Handling_Capability,
         Wanted_to_connect_with_supervisor, de_escalate, Supervisor_call_connected,
         call_back_arranged_from_supervisor, supervisor_evidence, Denied_for_Supervisor_call,
-        denied_evidence, Today_Date, Uploaded_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        denied_evidence, Today_Date, Uploaded_id, Escalation_Category, Location, TL_Email_Id ,Email_Id, 
+        Escalation_Keyword, Short_Escalation_Reason
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     try:

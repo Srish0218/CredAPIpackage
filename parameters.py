@@ -72,7 +72,9 @@ def process_transcripts_escalation(df: pd.DataFrame, request_ids=None):
                 'Probable_Reason_for_Escalation': clean_text(extracted.get('Reason', 'N/A')),
                 'Probable_Reason_for_Escalation_Evidence': clean_text(extracted.get('Evidence', 'N/A')),
                 'Agent_Handling_Capability': clean_text(extracted.get('Agent Handling Capability', 'N/A')),
-                'Escalation_Category': clean_text(extracted.get('Escalation Category', 'N/A'))
+                'Escalation_Category': clean_text(extracted.get('Escalation Category', 'N/A')),
+                'Escalation_Keyword': clean_text(extracted.get('Escalation Keyword', 'N/A')),
+                'Short_Escalation_Reason': clean_text(extracted.get('Short Escalation Reason', 'N/A'))
             })
         except Exception as e:
             errors.append(request_id)
@@ -83,7 +85,9 @@ def process_transcripts_escalation(df: pd.DataFrame, request_ids=None):
                 'Probable_Reason_for_Escalation': str(e),
                 'Probable_Reason_for_Escalation_Evidence': str(e),
                 'Agent_Handling_Capability': str(e),
-                'Escalation_Category': str(e)
+                'Escalation_Category': str(e),
+                'Escalation_Keyword': str(e),
+                'Short_Escalation_Reason': str(e)
             })
 
     return pd.DataFrame(results), errors

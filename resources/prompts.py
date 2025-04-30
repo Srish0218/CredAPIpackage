@@ -31,19 +31,43 @@ escalation_prompt = """
             - Emotional Distress & Mental Health Impact
             - Repeated Failures & Pattern of issues
             - Others
-        
-         7. **Escalation Keyword:**
-            - If any of the above keywords are mentioned in the transcript or any abusive word is used, it as the output.
 
-        8. **Short Escalation Reason (Strictly Use One from the List Below and map it in the same order with that in the Escalation Category):**
-            - Financial issues like delayed refunds, failed transactions, and financial consequences
-            - Dissatisfaction with policy changes, lack of communication, or inaccurate information
-            - Threats to escalate via social media or negative reviews
-            - Aggressive collection tactics or harassment by third-party service providers
-            - Severe emotional distress or mentions of self-harm or legal action due to unresolved issues
-            - Frustration with recurring issues or patterns of unresolved problems
+         7. **Escalation Keyword:**
+            - If any of the above keywords are directly mentioned in the transcript or any abusive word is used, give that exact word(s) as the output. Only give the exact keyword used as the output.
+
+         8. **Short Escalation Reason (Strictly Use One from the List Below and map it as per the Escalation Category):**
+            **Unresolved financial issues & Delays:**
+            - Delayed refunds
+            - Failed transactions
+            - Financial consequences
+
+            **Perceived injustice or unfairness in policies:**
+            - Dissatisfaction with policy changes
+            - Lack of communication
+            - Inaccurate information
+
+            **Threats of public exposure:**
+            - Threats to escalate via social media
+            - Negative reviews
+
+            **Harassment or Aggressive Collection practices:**
+            - Aggressive collection tactics
+            - Harassment by third-party service providers
+
+            **Emotional Distress & Mental Health Impact:**
+            - Severe emotional distress
+            - Mentions of self-harm
+            - Legal action due to unresolved issues
+
+            **Repeated Failures & Pattern of issues:**
+            - Frustration with recurring issues
+            - Patterns of unresolved problems
+
+            **Others:**
             - Others
-        
+
+
+
         Please structure your response in the following JSON format:
 
         ```json
@@ -58,7 +82,9 @@ escalation_prompt = """
             "Short Escalation Reason": <Short Escalation Reason>
         }
         ```
-        """
+"""
+        
+
 Supervisor_prompt = """
 You are an expert in auditing customer service interactions. Your task is to analyze the following transcript, which has been converted from an audio call to text. The focus is on determining if the customer explicitly requested to speak with a 'supervisor' or 'senior.' Due to the audio-to-text conversion, there may be errors, so analyze carefully but strictly adhere to the following guidelines:
 

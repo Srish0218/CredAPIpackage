@@ -12,6 +12,7 @@ from fetchData import fetch_data_from_database, upload_cred_result_on_database, 
     is_latest_uid_present, INPUT_DATABASE, fetchInteractionRoaster_forBrcp, get_created_on_by_uid, \
     fetchSoftskillOpsguru, fetchBrcpOpsguru, fetchInteractionOpsguru, fetchRoster, uploadOpsgurudata
 from resources.working_with_files import createDfOpsguru
+from resources.working_with_files import get_time
 
 app = FastAPI()
 
@@ -59,9 +60,10 @@ def fetch_api_result(uid: str, max_retries=100, retry_delay=5):
 
     return error
 
+import pytz
 
 def generate_output_brcp(uid, created_on):
-    """Fetch, analyze, and upload data with enhanced error handling."""
+    # Fetch, analyze, and upload data with enhanced error handling.
     try:
         # Fetch data from the database
         df = fetch_data_from_database(uid)
@@ -70,17 +72,43 @@ def generate_output_brcp(uid, created_on):
             reportError(error_msg)
             return {"status": "Failed", "message": error_msg}
 
-        # Analyze data using Gemini model
-        final_df = analyse_data_using_gemini_for_brcp(df, uid, created_on)
+        # Debugging: Check the type and value of 'created_on'
+        print(f"Original 'created_on' type: {type(created_on)}")
+        print(f"Original 'created_on' value: {created_on}")
 
-        if final_df.empty or final_df is None:
+        # Ensure 'created_on' is a datetime object
+        if isinstance(created_on, str):
+            try:
+                # Try parsing the string as a datetime object in the expected format
+                created_on = datetime.strptime(created_on, "%d-%m-%Y %H:%M")
+            except ValueError:
+                error_msg = "created_on string format is incorrect, unable to parse."
+                reportError(error_msg)
+                return {"status": "Error", "message": error_msg}
+
+        # Debugging: Check the type and value after conversion
+        print(f"Converted 'created_on' type: {type(created_on)}")
+        print(f"Converted 'created_on' value: {created_on}")
+
+        # Format 'created_on' to the required string format including time
+        if isinstance(created_on, datetime):
+            created_on_str = created_on.strftime("%d-%m-%Y %H:%M")
+        else:
+            created_on_str = created_on  # Assuming it's already in the right string format
+
+        # Debugging: Check the formatted 'created_on' value
+        print(f"Formatted 'created_on' value: {created_on_str}")
+
+        final_df = analyse_data_using_gemini_for_brcp(df, uid, created_on_str)
+
+        if final_df is None or final_df.empty:
             error_msg = "Data analysis failed. The output DataFrame is either missing or incorrect."
             reportError(error_msg)
             return {"status": "Failed", "message": error_msg}
 
         # Get today's date in IST
         ist = pytz.timezone('Asia/Kolkata')
-        date = (datetime.now(ist) - timedelta(days=0)).date()
+        date = (datetime.now(ist) - timedelta(days=0)).date()  # Keep 'date' as a datetime.date object
 
         # Fetch interaction roster
         interaction_roster_df = fetchInteractionRoaster_forBrcp(date)
@@ -94,13 +122,16 @@ def generate_output_brcp(uid, created_on):
         )
 
         # Drop Unnamed columns (index columns) if present
-        interaction_roster_brcp_df = interaction_roster_brcp_df.loc[:,
-                                     ~interaction_roster_brcp_df.columns.str.contains('^Unnamed')]
+        interaction_roster_brcp_df = interaction_roster_brcp_df.loc[
+                                     :, ~interaction_roster_brcp_df.columns.str.contains('^Unnamed')
+                                     ]
 
-        # Drop 'conversationid' column if it exists
-        if 'conversationid' in interaction_roster_brcp_df.columns:
-            interaction_roster_brcp_df = interaction_roster_brcp_df.drop(columns=['conversationid', 'agentemail1'])
-        interaction_roster_brcp_df.to_excel("interaction_roster_brcp_df.xlsx", index=False)
+        # Drop 'conversationid' and 'agentemail1' columns if they exist
+        drop_cols = [col for col in ['conversationid', 'agentemail1'] if col in interaction_roster_brcp_df.columns]
+        interaction_roster_brcp_df = interaction_roster_brcp_df.drop(columns=drop_cols)
+
+        # Save to Excel with timestamped filename
+        interaction_roster_brcp_df.to_excel(f"interaction_roster_brcp_df_{created_on_str}.xlsx", index=False)
 
         # List of required columns
         required_columns = [
@@ -113,18 +144,18 @@ def generate_output_brcp(uid, created_on):
             "TL_Email_Id", "Email_ID", "Escalation_Keyword", "Short_Escalation_Reason"
         ]
 
-        # Reorder: Place desired columns first (if they exist), then all other columns
+        # Reorder columns: desired first, then rest
         current_cols = interaction_roster_brcp_df.columns.tolist()
-        ordered_cols = [col for col in required_columns if col in current_cols]  # only existing desired columns
-        remaining_cols = [col for col in current_cols if col not in ordered_cols]  # the rest
+        ordered_cols = [col for col in required_columns if col in current_cols]
+        remaining_cols = [col for col in current_cols if col not in ordered_cols]
         final_column_order = ordered_cols + remaining_cols
 
-        # Apply new column order
         interaction_roster_brcp_df = interaction_roster_brcp_df[final_column_order]
+        # Drop duplicate conversation IDs
         interaction_roster_brcp_df = interaction_roster_brcp_df.drop_duplicates(subset='conversation_id', keep='first')
 
         # Upload to database
-        msg = upload_cred_result_on_database(interaction_roster_brcp_df, uid, created_on)
+        msg = upload_cred_result_on_database(interaction_roster_brcp_df, uid, created_on_str)
         if "successfully" in msg.lower():
             return {"status": "Success", "message": msg}
         else:
@@ -138,10 +169,65 @@ def generate_output_brcp(uid, created_on):
         return {"status": "Error", "message": str(e)}
 
 
-@app.get("/")
-def home():
-    return {"message": "CRED API Server is running!"}
+from datetime import datetime
 
+from datetime import datetime
+
+"""
+def generate_output_brcp(uid, created_on):
+    #Fetch, analyze, and upload data with enhanced error handling.
+    try:
+        # Fetch data from the database
+        df = fetch_data_from_database(uid)
+
+        # Get the time (assuming get_time() returns a string with the custom format)
+        time = get_time()
+
+        # If get_time() returns a string, convert it to a datetime object with the correct format
+        if isinstance(time, str):
+            try:
+                time = datetime.strptime(time, "%d_%B_%Y_%I%M%p")  # Adjust format according to the actual string format
+            except ValueError as e:
+                error_msg = f"Error parsing time string: {e}"
+                reportError(error_msg)
+                return {"status": "Error", "message": error_msg}
+
+        # At this point, 'time' is guaranteed to be a datetime object
+        # So ensure that any code following this doesn't treat 'time' as a string.
+
+        # Format datetime for safe filename usage (as a string for filename, but the original time is retained)
+        time_str = time.strftime("%Y%m%d_%H%M%S")
+
+        if df is None or df.empty:
+            error_msg = "Failed to fetch data from the database or DataFrame is empty."
+            reportError(error_msg)
+            return {"status": "Failed", "message": error_msg}
+
+        # Analyze data using Gemini model (pass the original datetime object)
+        final_df = analyse_data_using_gemini_for_brcp(df, uid, time)
+
+        if final_df is None or final_df.empty:
+            error_msg = "Data analysis failed. The output DataFrame is either missing or incorrect."
+            reportError(error_msg)
+            return {"status": "Failed", "message": error_msg}
+
+        # Save analyzed data to Excel (using the time_str for safe filename)
+        final_df.to_excel(f"CRED_FINAL_OUTPUT_{time_str}.xlsx", index=False)
+
+        # Upload processed data to the database (using the original created_on and time)
+        msg = upload_cred_result_on_database(final_df, uid, created_on)
+        if "successfully" in msg.lower():
+            return {"status": "Success", "message": msg}
+        else:
+            error_msg = f"Uploading failed: {msg}"
+            reportError(error_msg)
+            return {"status": "Uploading Failed", "message": msg}
+
+    except Exception as e:
+        error_msg = f"Unexpected error in generate_output_brcp: {e}"
+        reportError(error_msg)
+        return {"status": "Error", "message": str(e)}
+"""
 
 @app.get("/brcp")
 def get_brcp_result():

@@ -39,9 +39,9 @@ def get_connection(DATABASE):
 
 
 import time
-
+"""
 def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, retry_delay=5):
-    """Insert DataFrame into the database with retry mechanism."""
+    #Insert DataFrame into the database with retry mechanism.
 
     conn = get_connection(OUTPUT_DATABASE)
     if conn is None:
@@ -55,7 +55,7 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
     final_df = final_df.fillna(value="N/A")  # Handle NaN values once
     data_tuples = [tuple(row) for _, row in final_df.iterrows()]
 
-    insert_query = """
+    insert_query =""" """
     INSERT INTO brcpData (
         conversation_id, request_id, Sarcasm_rude_behaviour, Sarcasm_rude_behaviour_evidence,
         escalation_results, Issue_Identification, Probable_Reason_for_Escalation,
@@ -72,7 +72,7 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
         ?, ?, ?, ? ,?, ?, ?,
         ?, ?)
     """
-
+"""
     last_error = None
 
     try:
@@ -92,6 +92,99 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
                 if attempt < max_retries:
                     time.sleep(retry_delay)
         # If all attempts fail
+        final_msg = f"Retry failed after {max_retries} attempts.\nLast Error: {last_error}"
+        reportError(final_msg)
+        return final_msg
+    finally:
+        conn.close()
+"""
+
+from datetime import datetime
+
+def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, retry_delay=5):
+    """Insert DataFrame into the database with retry mechanism."""
+
+    conn = get_connection(OUTPUT_DATABASE)
+    if conn is None:
+        return "Database connection failed!"
+
+    if final_df.empty:
+        msg = "No data to insert. DataFrame is empty."
+        reportError(msg)
+        return msg
+
+    # Handle NaNs
+    final_df = final_df.fillna(value="N/A")
+
+    # Format 'created_on' to the desired string format
+    if isinstance(created_on, datetime):
+        created_on_str = created_on.strftime("%d-%m-%Y %H:%M")
+    else:
+        created_on_str = created_on  # Assume it's already in correct format
+
+    # Forcefully update Today_Date column in correct format
+    final_df["Today_Date"] = created_on_str
+
+    # Force correct column ordering
+    ordered_columns = [
+        "conversation_id", "request_id", "Sarcasm_rude_behaviour", "Sarcasm_rude_behaviour_evidence",
+        "escalation_results", "Issue_Identification", "Probable_Reason_for_Escalation",
+        "Probable_Reason_for_Escalation_Evidence", "Agent_Handling_Capability",
+        "Wanted_to_connect_with_supervisor", "de_escalate", "Supervisor_call_connected",
+        "call_back_arranged_from_supervisor", "supervisor_evidence", "Denied_for_Supervisor_call",
+        "denied_evidence", "Today_Date", "uploaded_id", "Escalation_Category", "Location",
+        "TL_Email_Id", "Email_Id", "Escalation_Keyword", "Short_Escalation_Reason"
+    ]
+
+    for col in ordered_columns:
+        if col not in final_df.columns:
+            final_df[col] = "N/A"  # or use None if appropriate
+    try:
+        final_df = final_df[ordered_columns]
+    except KeyError as e:
+        reportError(f"Missing expected columns in DataFrame: {e}")
+        return f"Data insertion failed: Missing columns - {e}"
+
+    # Debug print to verify date
+    print("Sample 'Today_Date' values just before DB insert:")
+    print(final_df["Today_Date"].head())
+
+    data_tuples = [tuple(row) for _, row in final_df.iterrows()]
+
+    insert_query = """
+    INSERT INTO brcpData (
+        conversation_id, request_id, Sarcasm_rude_behaviour, Sarcasm_rude_behaviour_evidence,
+        escalation_results, Issue_Identification, Probable_Reason_for_Escalation,
+        Probable_Reason_for_Escalation_Evidence, Agent_Handling_Capability,
+        Wanted_to_connect_with_supervisor, de_escalate, Supervisor_call_connected,
+        call_back_arranged_from_supervisor, supervisor_evidence, Denied_for_Supervisor_call,
+        denied_evidence, Today_Date, uploaded_id, Escalation_Category, Location, TL_Email_Id ,Email_Id, 
+        Escalation_Keyword, Short_Escalation_Reason
+    ) VALUES (?, ?, ?, ?,
+              ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+    last_error = None
+
+    try:
+        for attempt in range(1, max_retries + 1):
+            try:
+                cursor = conn.cursor()
+                cursor.executemany(insert_query, data_tuples)
+                conn.commit()
+                reportSuccessMsgBRCP(uid, created_on_str)
+                return "Data inserted successfully!"
+            except Exception as e:
+                conn.rollback()
+                last_error = e
+                reportError(f"Attempt {attempt}: Error inserting data - {e}")
+                print(f"Attempt {attempt}: Error inserting data - {e}")
+
+                if attempt < max_retries:
+                    time.sleep(retry_delay)
+
+        # All retries failed
         final_msg = f"Retry failed after {max_retries} attempts.\nLast Error: {last_error}"
         reportError(final_msg)
         return final_msg

@@ -48,7 +48,7 @@ def analyse_data_using_gemini_for_brcp(df, uid, date):
 
     CRED_FINAL_OUTPUT.replace('nan', 'N/A', inplace=True)
 
-    CRED_FINAL_OUTPUT['Today_Date'] = date.split()[0]
+    CRED_FINAL_OUTPUT['Today_Date'] = date
     for index, row in CRED_FINAL_OUTPUT.iterrows():
         if row['Wanted_to_connect_with_supervisor'] == "No":
             for col in ['de_escalate', 'Supervisor_call_connected', 'call_back_arranged_from_supervisor',
@@ -337,3 +337,4 @@ def analyse_data_for_soft_skill(primaryInfo_df, transcript_df, transcriptChat_df
             CRED_FINAL_OUTPUT = CRED_FINAL_OUTPUT.drop(columns=extra_cols, errors="ignore")
             reportStatus(body)
             return CRED_FINAL_OUTPUT
+

@@ -6,6 +6,7 @@ from ZulipMessenger import reportSuccessMsgBRCP, reportError, reportStatus, repo
 import urllib
 from sqlalchemy import create_engine
 from sqlalchemy import text
+import time
 
 load_dotenv()
 
@@ -38,69 +39,6 @@ def get_connection(DATABASE):
     return None
 
 
-import time
-"""
-def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, retry_delay=5):
-    #Insert DataFrame into the database with retry mechanism.
-
-    conn = get_connection(OUTPUT_DATABASE)
-    if conn is None:
-        return "Database connection failed!"
-
-    if final_df.empty:
-        msg = "No data to insert. DataFrame is empty."
-        reportError(msg)
-        return msg
-
-    final_df = final_df.fillna(value="N/A")  # Handle NaN values once
-    data_tuples = [tuple(row) for _, row in final_df.iterrows()]
-
-    insert_query =""" """
-    INSERT INTO brcpData (
-        conversation_id, request_id, Sarcasm_rude_behaviour, Sarcasm_rude_behaviour_evidence,
-        escalation_results, Issue_Identification, Probable_Reason_for_Escalation,
-        Probable_Reason_for_Escalation_Evidence, Agent_Handling_Capability,
-        Wanted_to_connect_with_supervisor, de_escalate, Supervisor_call_connected,
-        call_back_arranged_from_supervisor, supervisor_evidence, Denied_for_Supervisor_call,
-        denied_evidence, Today_Date, Uploaded_id, Escalation_Category, Location, TL_Email_Id ,Email_Id, 
-        Escalation_Keyword, Short_Escalation_Reason
-    ) VALUES (?, ?, ?, ?,
-        ?, ?, ?,
-        ?, ?,
-        ?, ?, ?,
-        ?, ?, ?,
-        ?, ?, ?, ? ,?, ?, ?,
-        ?, ?)
-    """
-"""
-    last_error = None
-
-    try:
-        for attempt in range(1, max_retries + 1):
-            try:
-                cursor = conn.cursor()
-                cursor.executemany(insert_query, data_tuples)
-                conn.commit()
-                reportSuccessMsgBRCP(uid, created_on)
-                return "Data inserted successfully!"
-            except Exception as e:
-                conn.rollback()
-                last_error = e
-                reportError(f"Attempt {attempt}: Error inserting data - {e}")
-                print(f"Attempt {attempt}: Error inserting data - {e}")
-
-                if attempt < max_retries:
-                    time.sleep(retry_delay)
-        # If all attempts fail
-        final_msg = f"Retry failed after {max_retries} attempts.\nLast Error: {last_error}"
-        reportError(final_msg)
-        return final_msg
-    finally:
-        conn.close()
-"""
-
-from datetime import datetime
-
 def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, retry_delay=5):
     """Insert DataFrame into the database with retry mechanism."""
 
@@ -115,15 +53,6 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
 
     # Handle NaNs
     final_df = final_df.fillna(value="N/A")
-
-    # Format 'created_on' to the desired string format
-    if isinstance(created_on, datetime):
-        created_on_str = created_on.strftime("%d-%m-%Y %H:%M")
-    else:
-        created_on_str = created_on  # Assume it's already in correct format
-
-    # Forcefully update Today_Date column in correct format
-    final_df["Today_Date"] = created_on_str
 
     # Force correct column ordering
     ordered_columns = [
@@ -144,10 +73,6 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
     except KeyError as e:
         reportError(f"Missing expected columns in DataFrame: {e}")
         return f"Data insertion failed: Missing columns - {e}"
-
-    # Debug print to verify date
-    print("Sample 'Today_Date' values just before DB insert:")
-    print(final_df["Today_Date"].head())
 
     data_tuples = [tuple(row) for _, row in final_df.iterrows()]
 
@@ -173,7 +98,7 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
                 cursor = conn.cursor()
                 cursor.executemany(insert_query, data_tuples)
                 conn.commit()
-                reportSuccessMsgBRCP(uid, created_on_str)
+                reportSuccessMsgBRCP(uid, created_on)
                 return "Data inserted successfully!"
             except Exception as e:
                 conn.rollback()
@@ -234,6 +159,7 @@ def fetch_data_from_database(uid):
     # Only one message after all retries
     reportError(f"Data fetching failed after {max_retries} attempts.\nLast Error: {last_error}")
     return None
+
 
 def upload_softskill_result_on_database(df, date):
     """Insert DataFrame into the database with retries."""
@@ -427,20 +353,22 @@ def fetchInteractionRoaster_forBrcp(date, database=OUTPUT_DATABASE):
     interactionQuery = """
     SELECT conversationid, agentemail1
     FROM interactiondb 
-    WHERE CONVERT(DATE, TRY_CAST(updated_at AS DATETIME)) = ?
+    WHERE startdate = ?
     """
     interaction_df = pd.read_sql(interactionQuery, conn, params=[date])
+    interaction_df['agentemail1'] = interaction_df['agentemail1'].str.lower()
 
     rosterQuery = """
-    SELECT Location, TL_Email_Id, Email_ID 
+    SELECT Location, TL_Email_Id, Email_Id 
     FROM ROSTER
     """
     roster_df = pd.read_sql(rosterQuery, conn)
+    roster_df['Email_Id'] = roster_df['Email_Id'].str.lower()
 
     # Merge dataframes on agentmail1 from interactions and Email_ID from roster.
-    interaction_roster_df = pd.merge(interaction_df, roster_df, left_on='agentemail1', right_on='Email_ID', how='inner')
+    interaction_roster_df = pd.merge(interaction_df, roster_df, left_on='agentemail1', right_on='Email_Id', how='left')
+    print(interaction_roster_df.columns.tolist())
     return interaction_roster_df
-
 
 
 def get_created_on_by_uid(database, uid):
@@ -467,6 +395,175 @@ def get_created_on_by_uid(database, uid):
                 conn.close()
 
     return None  # Return None if all attempts fail
+
+
+def is_uid_already_processed(uid):
+    all_uids = get_all_primaryinfo_uids()
+    return uid in all_uids
+
+
+def fetchSoftskillOpsguru(date):
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_connection(OUTPUT_DATABASE)
+
+            if not conn:
+                raise Exception("Database connection failed!")
+
+            query = f"""
+                SELECT * 
+                FROM softskill WHERE CONVERT(DATE, TRY_CAST(uploaded_date AS DATETIME)) = ?
+            """
+            df = pd.read_sql_query(query, conn, params=(date,))
+
+            return df, "Data Fetching Success"
+
+        except Exception as e:
+            reportError(f"[Attempt {attempt}/{max_retries}] Error: {e}")
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            if conn:
+                conn.close()
+
+    return None, "Data fetching failed after retries!"
+
+
+def fetchBrcpOpsguru(date):
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_connection(OUTPUT_DATABASE)
+
+            if not conn:
+                raise Exception("Database connection failed!")
+
+            query = """
+SELECT *
+FROM brcpData 
+WHERE CONVERT(DATE, TRY_PARSE(Today_Date AS DATETIME USING 'en-GB')) = ?
+            """
+            df = pd.read_sql_query(query, conn, params=(date,))
+
+            return df, "Data Fetching Success"
+
+        except Exception as e:
+            reportError(f"[Attempt {attempt}/{max_retries}] Error: {e}")
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            if conn:
+                conn.close()
+
+    return None, "Data fetching failed after retries!"
+
+
+def fetchInteractionOpsguru(date):
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_connection(OUTPUT_DATABASE)
+
+            if not conn:
+                raise Exception("Database connection failed!")
+
+            query = f"""
+                SELECT * 
+                FROM interactiondb WHERE CONVERT(DATE, TRY_CAST(updated_at AS DATETIME)) = ?
+            """
+            df = pd.read_sql_query(query, conn, params=(date,))
+
+            return df, "Data Fetching Success"
+
+        except Exception as e:
+            reportError(f"[Attempt {attempt}/{max_retries}] Error: {e}")
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            if conn:
+                conn.close()
+
+    return None, "Data fetching failed after retries!"
+
+
+def fetchRoster():
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_connection(OUTPUT_DATABASE)
+
+            if not conn:
+                raise Exception("Database connection failed!")
+
+            query = f"""
+                SELECT * 
+                FROM ROSTER 
+            """
+            df = pd.read_sql_query(query, conn)
+
+            return df, "Data Fetching Success"
+
+        except Exception as e:
+            reportError(f"[Attempt {attempt}/{max_retries}] Error: {e}")
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            if conn:
+                conn.close()
+
+    return None, "Data fetching failed after retries!"
+
+
+def uploadOpsgurudata(df, table_name, database='OUTPUT_DATABASE', if_exists='append'):
+    try:
+        # Load connection parameters from environment
+        server = os.getenv("DB_SERVER")
+        username = os.getenv("DB_USERNAME")
+        password = os.getenv("DB_PASSWORD")
+        driver = os.getenv("DB_DRIVER", "{ODBC Driver 17 for SQL Server}")
+        db_name = os.getenv(database)
+
+        # Build the connection string
+        params = urllib.parse.quote_plus(
+            f"DRIVER={driver};"
+            f"SERVER={server};"
+            f"DATABASE={db_name};"
+            f"UID={username};"
+            f"PWD={password}"
+        )
+
+        # Create SQLAlchemy engine
+        engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
+
+        # Step 1: Clean column names in DataFrame (replace spaces with underscores)
+        original_columns = df.columns.tolist()
+        df.columns = [col.strip().replace(' ', '_') for col in df.columns]
+
+        # Step 2: Get actual DB table columns
+        with engine.connect() as connection:
+            result = connection.execute(
+                text(f"""
+                    SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = :table
+                """),
+                {"table": table_name}
+            )
+            db_columns = {row[0].lower() for row in result.fetchall()}
+
+        # Step 3: Keep only matching columns in DataFrame
+        df = df[[col for col in df.columns if col.lower() in db_columns]]
+
+        # Step 4: Log column mapping
+        # print("📋 Final DataFrame columns to upload:", df.columns.tolist())
+        skipped = [col for col in original_columns if col.strip().replace(' ', '_').lower() not in db_columns]
+        if skipped:
+            reportStatus(f"⚠️ Skipping unmatched columns (not in DB): {skipped}")
+
+        # Step 5: Upload to SQL Server
+        df.to_sql(name=table_name, con=engine, index=False, if_exists=if_exists)
+        reportStatus(f"✅ Data uploaded successfully to {db_name}.{table_name}")
+
+    except Exception as e:
+        reportError(f"❌ Error uploading data to SQL Server: {e}")
+
 
 
 def is_uid_already_processed(uid):

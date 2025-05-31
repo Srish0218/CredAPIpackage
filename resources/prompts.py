@@ -1,87 +1,94 @@
 escalation_prompt = """
-        You are a highly objective and detail-oriented AI assistant. Please analyze the transcript provided above with the goal of strictly finding keywords mentioned below.
+Assume that the transcript contains both agent and customer dialogue, but it is not labeled with speaker names. Your task is to identify and analyze only those parts of the transcript that are most likely spoken by the *customer*.
 
-        This analysis aims to flag cases where the customer references any of the following keywords: "Kunal Shah" ,"CEO", "Supervisor", "Senior", "Social Media" ,"Consumer forum" ,"Grievance officer", "threat", "harassment", "RBI", "NPCI" "Police","Court", "Legal action", "Grievance officer", "threat" , "harassment","Suicide", "Advocate" or any other form of similar threat or harassment. These keywords may indicate potential escalation, and your task is to just look for these keywords and provide a detailed analysis.
+To identify customer statements, rely on common conversational patterns:
+- Customer segments often include complaints, issues faced, or emotional expressions.
+- Agent-like phrases include procedural statements (e.g., "please hold", "let me check", "your request is being processed").
+- Ignore any statements that resemble standard agent scripting, confirmations, instructions, or system-related updates.
 
-        Please follow the steps below:
+Assume the transcript includes both agent and customer dialogue, but there are no speaker labels. You must analyze *only those parts most likely spoken by the customer* to find the keywords mentioned below. Do not consider agent-like language, procedural statements, or system messages.
+You must *strictly exclude* segments that are likely from the agent and *only analyze customer-side statements* for the keywords listed below.
+"Kunal Shah" ,"CEO", "Supervisor", "Senior", "Social Media" ,"Consumer forum" ,"Grievance officer", "threat", "harassment", "RBI", "NPCI" "Police","Court", "Legal action", "Grievance officer", "threat" , "harassment","Suicide", "Advocate" or any other form of similar threat or harassment. These keywords may indicate potential escalation, and your task is to just look for these keywords and provide a detailed analysis.
+Do not consider any other keyword which is not present in the list above.
 
-        1. **Escalation Detection:**
-           - If any of the above keywords are found within the transcript, mark the output as "Not Met."
-           - If none of these keywords are found, mark the output as "Met."
+Please follow the steps below:
 
-        2. **Issue Identification:**
-           - Clearly identify the core issue or concern raised by the customer during the interaction.
+1. **Escalation Detection:**
+   - If any of the above keyword are found in the transcript, mark the output as "Not Met."
+   - If none of the above mentioned keywords are found, mark the output strictly as "Met."
 
-        3. **Probable Reason for Escalation:**
-           - Analyze the factors that could potentially lead to escalation, such as unresolved issues, customer dissatisfaction, or miscommunication.
+2. **Issue Identification:**
+   - Clearly identify the core issue or concern raised by the customer during the interaction.
 
-        4. **Evidence:**
-           - Provide a clear rationale for your decision.
-           - If marked as "Met," explain why no potential escalation was detected, referencing specific parts of the conversation.
-           - If marked as "Not Met," provide the exact statements or actions that demonstrate potential escalation.
+3. **Probable Reason for Escalation:**
+   - Analyze the factors that could potentially lead to escalation, such as unresolved issues, customer dissatisfaction, or miscommunication.
 
-        5. **Agent Handling Capability:**
-           - Evaluate the agent’s ability to manage the interaction effectively, including their communication skills and problem-solving abilities.
+4. **Evidence:**
+   - Provide a clear rationale for your decision.
+   - If marked as "Met," explain why no potential escalation was detected, referencing specific parts of the conversation.
+   - If marked as "Not Met," provide the exact statements or actions that demonstrate potential escalation.
 
-        6. **Escalation Category Selection (Strictly Use One from the List Below):**
-            - Unresolved financial issues & Delays
-            - Perceived injustice or unfairness in policies
-            - Threats of public exposure
-            - Harassement or Aggressive Collection practices
-            - Emotional Distress & Mental Health Impact
-            - Repeated Failures & Pattern of issues
-            - Others
+5. **Agent Handling Capability:**
+   - Evaluate the agent’s ability to manage the interaction effectively, including their communication skills and problem-solving abilities.
 
-         7. **Escalation Keyword:**
-            - If any of the above keywords are directly mentioned in the transcript or any abusive word is used, give that exact word(s) as the output. Only give the exact keyword used as the output.
+6. **Escalation Category Selection (Strictly Use One from the List Below):**
+    - Unresolved financial issues & Delays
+    - Perceived injustice or unfairness in policies
+    - Threats of public exposure
+    - Harassement or Aggressive Collection practices
+    - Emotional Distress & Mental Health Impact
+    - Repeated Failures & Pattern of issues
+    - Others
 
-         8. **Short Escalation Reason (Strictly Use One from the List Below and map it as per the Escalation Category):**
-            **Unresolved financial issues & Delays:**
-            - Delayed refunds
-            - Failed transactions
-            - Financial consequences
+7. **Escalation Keyword:**
+   - Provide the exact **'Keyword'**.
+   - **Do not include extra words, explanations or synonyms in this output.**
 
-            **Perceived injustice or unfairness in policies:**
-            - Dissatisfaction with policy changes
-            - Lack of communication
-            - Inaccurate information
+8. **Short Escalation Reason (Strictly Use One from the List Below and map it as per the Escalation Category):**
+    **Unresolved financial issues & Delays:**
+    - Delayed refunds
+    - Failed transactions
+    - Financial consequences
 
-            **Threats of public exposure:**
-            - Threats to escalate via social media
-            - Negative reviews
+    **Perceived injustice or unfairness in policies:**
+    - Dissatisfaction with policy changes
+    - Lack of communication
+    - Inaccurate information
 
-            **Harassment or Aggressive Collection practices:**
-            - Aggressive collection tactics
-            - Harassment by third-party service providers
+    **Threats of public exposure:**
+    - Threats to escalate via social media
+    - Negative reviews
 
-            **Emotional Distress & Mental Health Impact:**
-            - Severe emotional distress
-            - Mentions of self-harm
-            - Legal action due to unresolved issues
+    **Harassment or Aggressive Collection practices:**
+    - Aggressive collection tactics
+    - Harassment by third-party service providers
 
-            **Repeated Failures & Pattern of issues:**
-            - Frustration with recurring issues
-            - Patterns of unresolved problems
+    **Emotional Distress & Mental Health Impact:**
+    - Severe emotional distress
+    - Mentions of self-harm
+    - Legal action due to unresolved issues
 
-            **Others:**
-            - Others
+    **Repeated Failures & Pattern of issues:**
+    - Frustration with recurring issues
+    - Patterns of unresolved problems
 
+    **Others:**
+    - Others
 
+Please structure your response in the following JSON format:
 
-        Please structure your response in the following JSON format:
-
-        ```json
-        {
-            "Value": "Met" or "Not Met",
-            "Issue": "<Issue Identification>",
-            "Reason": "<Probable Reason for Escalation>",
-            "Evidence": "<detailed evidence>",
-            "Agent Handling Capability": "<Agent Handling Capability>",
-            "Escalation Category": <Escalation Category>,
-            "Escalation Keyword": <Escalation Keyword>,
-            "Short Escalation Reason": <Short Escalation Reason>
-        }
-        ```
+```json
+{
+    "Value": "Met" or "Not Met",
+    "Issue": "<Issue Identification>",
+    "Reason": "<Probable Reason for Escalation>",
+    "Evidence": "<detailed evidence>",
+    "Agent Handling Capability": "<Agent Handling Capability>",
+    "Escalation Category": "<Escalation Category>",
+    "Escalation Keyword": "<Escalation Keyword>",
+    "Short Escalation Reason": "<Short Escalation Reason>"
+}
+```
 """
         
 
@@ -115,6 +122,7 @@ Return the results in the following JSON format:
     "Denied_for_Supervisor_call": "<Yes/No/N/A>",
     "denied_evidence": "<detailed evidence / N/A>"
 }
+```
 """
 
 RudeSarcastic_prompt = """
@@ -181,6 +189,7 @@ Please output a JSON object as follows:
     "Greeting": "Met" or "Not Met",
     "Greeting Evidence": "<specific phrases or actions>"
 }}
+```
 """
 
 prompt_opening = f"""
@@ -219,7 +228,7 @@ prompt_opening = f"""
     Provide your assessment in a clear and concise manner. Indicate whether the agent met the guideline, and if not, provide specific examples from the chat that demonstrate the violation.
 
     *Output Format:*
-
+   
     json
     {{
         'Greeting the Customer': 'Met' or 'Not Met',
@@ -354,17 +363,20 @@ You are an objective AI assistant. Review the transcript and evaluate whether th
     "Category": "<Selected category from the list only>"
 }}
 
-    conversation:
+```
 """
-
 Unethical_Solicitation_prompt = """
  You are a helpful and objective AI assistant. Review the following call recording and evaluate the agent's conduct based on the following criteria:
 
 
  **Assess whether the agent explicitly asked for a high rating**:
     - If the agent requested the customer to give a high rating (e.g., explicitly stating to rate 5 out of 5), mark this as 'Not Met' and provide a detailed summary.
-    - If the agent merely explained the rating scale (e.g., stating that 1 is the lowest and 5 is the highest or excellent or full) or transferred the customer to the feedback IVR without explicitly asking for a high rating,  mark this strictly as 'Met' and provide a summary. 
+    - If the agent merely explained the rating scale (e.g., stating that 1 is the lowest and 5 is the highest or excellent or full) or transferred the customer to the feedback IVR without explicitly asking for a high rating, mark this strictly as 'Met' and provide a summary.
+    - If the agent merely explained the rating scale in some other way (e.g., stating that 5 being highest and 1 being lowest), mark this strictly as 'Met' and provide a summary.
     - If the agent greeted him (i.e, with some statement like "great day ahead" or "good day ahead") dont take this as an attempt to nudge the customer towards a positive rating. You need to mark this strictly as "Met".
+    - If 1 and 5 is mentioned in the transcript, mark this strictly as 'Met' and provide a summary.
+    - Strictly stick to what the agent said. Do not consider customer's statement in any case.
+    - For Example, 'I would like to give 5' is said by customer, agent never says this kind of statement. So mark the similar cases strictly as "Met".
 
 You only need to check for agent not for customer's words.
 
@@ -375,7 +387,7 @@ Please structure your response in the following JSON format:
     "Unethical_Solicitation": "Met" or "Not Met",
     "Unethical_Solicitation_Evidence": "<detailed evidence>"
 }
-
+```
 
 """
 

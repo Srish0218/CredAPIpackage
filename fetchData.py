@@ -62,7 +62,7 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
         "Wanted_to_connect_with_supervisor", "de_escalate", "Supervisor_call_connected",
         "call_back_arranged_from_supervisor", "supervisor_evidence", "Denied_for_Supervisor_call",
         "denied_evidence", "Today_Date", "uploaded_id", "Escalation_Category", "Location",
-        "TL_Email_Id", "Email_Id", "Escalation_Keyword", "Short_Escalation_Reason"
+        "TL_Email_Id", "Email_Id", "Escalation_Keyword", "Short_Escalation_Reason", "queuename1", "agentemail1"
     ]
 
     for col in ordered_columns:
@@ -84,10 +84,10 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
         Wanted_to_connect_with_supervisor, de_escalate, Supervisor_call_connected,
         call_back_arranged_from_supervisor, supervisor_evidence, Denied_for_Supervisor_call,
         denied_evidence, Today_Date, uploaded_id, Escalation_Category, Location, TL_Email_Id ,Email_Id, 
-        Escalation_Keyword, Short_Escalation_Reason
+        Escalation_Keyword, Short_Escalation_Reason, queuename1, agentemail1
     ) VALUES (?, ?, ?, ?,
               ?, ?, ?, ?, ?,
-              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     last_error = None
@@ -289,6 +289,52 @@ def fetch_data_softskill(date):
 
     return None, None, None, "Data fetching failed after retries!"
 
+def fetch_data_from_database_by_date(uploaded_date):
+    """Fetch data based on uploaded_date with corrected table joins."""
+    last_error = None
+
+    for attempt in range(1, max_retries + 1):
+        conn = get_connection(INPUT_DATABASE)
+        if conn is None:
+            last_error = "Database connection failed!"
+            time.sleep(retry_delay * attempt)
+            continue
+
+        try:
+            query = """
+                    SELECT 
+                        p.conversation_id, 
+                        p.request_id, 
+                        i.mediatype,
+                        t.starttime
+                    FROM TransmonCred.dbo.tPrimaryInfo p
+                    INNER JOIN TransmonCred.dbo.tutterances t
+                        ON p.request_id = t.request_id
+                    INNER JOIN CredOutputDB.dbo.interactiondb i
+                        ON p.conversation_id = i.conversationid COLLATE SQL_Latin1_General_CP1_CI_AS
+                    WHERE CAST(p.Uploaded_on AS DATE) = CAST(? AS DATE)
+                    """
+            df = pd.read_sql_query(query, conn, params=(uploaded_date,))
+            df = df.drop_duplicates()
+
+            if df.empty:
+                reportError("No data found for the given date.")
+                return None
+
+            #reportStatus(f"Data Fetching Success: {df.shape[0]} rows, columns: {list(df.columns)}")
+            print(f"Data Fetching Success: {df.shape[0]} rows, columns: {list(df.columns)}")
+            return df
+
+        except Exception as e:
+            last_error = e
+            time.sleep(retry_delay * attempt)
+
+        finally:
+            conn.close()
+
+    #reportError(f"Data fetching failed after {max_retries} attempts.\nLast Error: {last_error}")
+    print(f"Data fetching failed after {max_retries} attempts.\nLast Error: {last_error}")
+    return None
 
 def get_latest_uid(database):
     """Fetch the latest uploaded_id and created_on timestamp from Conversation_ID_List with retries."""
@@ -314,7 +360,6 @@ def get_latest_uid(database):
                 conn.close()
 
     return None, None  # Return None for both values if all attempts fail
-
 
 def get_all_primaryinfo_uids():
     """Fetch all distinct uploaded_id values from tPrimaryInfo."""
@@ -350,12 +395,20 @@ def fetchInteractionRoaster_forBrcp(date, database=OUTPUT_DATABASE):
     if conn is None:
         return None
 
+    from datetime import datetime, timedelta
+    if isinstance(date, str):
+        date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+    else:
+        date_obj = date
+    prev_date = (date_obj - timedelta(days=1)).strftime("%Y-%m-%d")
+    curr_date = date_obj.strftime("%Y-%m-%d")
+
     interactionQuery = """
-    SELECT conversationid, agentemail1
+    SELECT conversationid, agentemail1, queuename1
     FROM interactiondb 
-    WHERE startdate = ?
+    WHERE startdate IN (?, ?)
     """
-    interaction_df = pd.read_sql(interactionQuery, conn, params=[date])
+    interaction_df = pd.read_sql(interactionQuery, conn, params=[curr_date, prev_date])
     interaction_df['agentemail1'] = interaction_df['agentemail1'].str.lower()
 
     rosterQuery = """
@@ -427,6 +480,7 @@ def fetchSoftskillOpsguru(date):
                 conn.close()
 
     return None, "Data fetching failed after retries!"
+
 
 
 def fetchBrcpOpsguru(date):

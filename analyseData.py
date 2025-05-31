@@ -5,7 +5,7 @@ import spacy
 from spacy.language import Language
 from spacy_langdetect import LanguageDetector
 from ZulipMessenger import reportError, reportStatus
-from fetchData import upload_softskill_result_on_database
+from fetchData import upload_softskill_result_on_database, fetch_data_from_database_by_date
 from parameters import updating_RudeSarcasm_result, classify_rude_sarcastic, \
     process_transcripts_escalation, classify_supervisor, classify_langSwitch, classifyApologyEmpathy, \
     classifyUnethicalSolicitation, classifyReassurance, classifyChatClosing, classifyChatOpening, \
@@ -286,9 +286,12 @@ def analyse_data_for_soft_skill(primaryInfo_df, transcript_df, transcriptChat_df
 
     # Step 13: Timely Opening Parameter
     # reportStatus(f"Processing Timely Opening Parameter...")
-    timelyOpening_df = process_TimelyOpening(transcriptChat_df)
-    print("timely opening done")
+    TimelyOp = fetch_data_from_database_by_date(date)
+    timelyOpening_df = process_TimelyOpening(TimelyOp)
+    # print("timely opening done")
     reportStatus(f"✅ Timely Opening Parameter processing complete")
+
+
 
     print("combing")
     CRED_FINAL_OUTPUT = langSwitch_df

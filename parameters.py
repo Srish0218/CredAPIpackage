@@ -655,7 +655,7 @@ def classifyOpeningLang(df: pd.DataFrame, request_ids=None):
                     'request_id': request_id,
                     'Open the call in default language': "Error",
                     'Open the call in default language evidence': str(error_message),
-                    'Open the call in default language evidence Reason': "Error"
+                    'Open the call in default language Reason': "Error"
                 })
 
     return pd.DataFrame(results), errors
@@ -1429,21 +1429,32 @@ def process_TimelyOpening(dataframe):
     # Ensure 'starttime' is numeric
     first_rows['starttime'] = pd.to_numeric(first_rows['starttime'], errors='coerce')
 
-    # Handle NaN values in 'starttime' to avoid further errors
-    first_rows['Delayed call opening'] = first_rows['starttime'].apply(
-        lambda x: 'Met' if pd.notna(x) and x <= 3 else 'Not Met'
+    # Initialize result columns with default values
+    first_rows['Delayed call opening'] = 'Not Met'
+    first_rows['Delayed call opening evidence'] = 'Start time is missing.'
+
+    # Apply logic for Voice
+    voice_mask = (first_rows['mediatype'] == 'voice') & first_rows['starttime'].notna()
+    first_rows.loc[voice_mask, 'Delayed call opening'] = first_rows.loc[voice_mask, 'starttime'].apply(
+        lambda x: 'Met' if x <= 3 else 'Not Met'
+    )
+    first_rows.loc[voice_mask, 'Delayed call opening evidence'] = first_rows.loc[voice_mask, 'starttime'].apply(
+        lambda x: f'Call opened within 3 seconds. Agent opened the call at {x}.' if x <= 3
+        else f'Call opened after 3 seconds. Agent opened the call at {x}.'
     )
 
-    # Add the 'timely_opening_evidence' column
-    first_rows['Delayed call opening evidence'] = first_rows['starttime'].apply(
-        lambda x: f'Call opened within 3 seconds. Agent opened the call at {x}.'
-        if pd.notna(x) and x <= 3
-        else f'Call opened after 3 seconds. Agent opened the call at {x}.' if pd.notna(x) else 'Start time is missing.'
+    # Apply logic for Callback
+    callback_mask = (first_rows['mediatype'] == 'Callback') & first_rows['starttime'].notna()
+    first_rows.loc[callback_mask, 'Delayed call opening'] = first_rows.loc[callback_mask, 'starttime'].apply(
+        lambda x: 'Met' if x < 21 else 'Not Met'
+    )
+    first_rows.loc[callback_mask, 'Delayed call opening evidence'] = first_rows.loc[callback_mask, 'starttime'].apply(
+        lambda x: f'Call opened within 21 seconds. Agent opened the call at {x}.' if x < 21
+        else f'Call opened after 21 seconds. Agent opened the call at {x}.'
     )
 
     # Return only the necessary columns
     return first_rows[['request_id', 'Delayed call opening', 'Delayed call opening evidence']]
-
 
 def process_classification(classification_func, df, expected_columns, classification_name):
     max_retries = 5

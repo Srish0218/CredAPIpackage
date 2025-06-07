@@ -62,7 +62,8 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
         "Wanted_to_connect_with_supervisor", "de_escalate", "Supervisor_call_connected",
         "call_back_arranged_from_supervisor", "supervisor_evidence", "Denied_for_Supervisor_call",
         "denied_evidence", "Today_Date", "uploaded_id", "Escalation_Category", "Location",
-        "TL_Email_Id", "Email_Id", "Escalation_Keyword", "Short_Escalation_Reason", "queuename1", "agentemail1"
+        "TL_Email_Id", "Email_Id", "Escalation_Keyword", "Short_Escalation_Reason", "queuename1", "agentemail1",
+        "freshdeskticketid"
     ]
 
     for col in ordered_columns:
@@ -84,10 +85,10 @@ def upload_cred_result_on_database(final_df, uid, created_on, max_retries=3, ret
         Wanted_to_connect_with_supervisor, de_escalate, Supervisor_call_connected,
         call_back_arranged_from_supervisor, supervisor_evidence, Denied_for_Supervisor_call,
         denied_evidence, Today_Date, uploaded_id, Escalation_Category, Location, TL_Email_Id ,Email_Id, 
-        Escalation_Keyword, Short_Escalation_Reason, queuename1, agentemail1
+        Escalation_Keyword, Short_Escalation_Reason, queuename1, agentemail1, freshdeskticketid
     ) VALUES (?, ?, ?, ?,
               ?, ?, ?, ?, ?,
-              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     last_error = None
@@ -404,7 +405,7 @@ def fetchInteractionRoaster_forBrcp(date, database=OUTPUT_DATABASE):
     curr_date = date_obj.strftime("%Y-%m-%d")
 
     interactionQuery = """
-    SELECT conversationid, agentemail1, queuename1
+    SELECT conversationid, agentemail1, queuename1, freshdeskticketid
     FROM interactiondb 
     WHERE startdate IN (?, ?)
     """

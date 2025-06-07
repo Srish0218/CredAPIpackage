@@ -104,7 +104,8 @@ def generate_output_brcp(uid, created_on):
             "Wanted_to_connect_with_supervisor", "de_escalate", "Supervisor_call_connected",
             "call_back_arranged_from_supervisor", "supervisor_evidence", "Denied_for_Supervisor_call",
             "denied_evidence", "Today_Date", "uploaded_id", "Escalation_Category", "Location",
-            "TL_Email_Id", "Email_Id", "Escalation_Keyword", "Short_Escalation_Reason", "queuename1", "agentemail1"
+            "TL_Email_Id", "Email_Id", "Escalation_Keyword", "Short_Escalation_Reason", "queuename1", "agentemail1",
+            "freshdeskticketid"
         ]
 
 
@@ -264,7 +265,7 @@ def getOpsguruResult():
     softskill, softskillResponse = fetchSoftskillOpsguru(yesterday_ymd)
     response['softskill'] = softskillResponse
     brcp, BrcpResponse = fetchBrcpOpsguru(yesterday_ymd)
-    brcp = brcp.drop(['TL_Email_Id', 'Location', 'queuename1', 'agentemail1'], axis=1)
+    brcp = brcp.drop(['TL_Email_Id', 'Location', 'queuename1', 'agentemail1', 'freshdeskticketid'], axis=1)
 
     response['brcp'] = BrcpResponse
     interaction, interactionResponse = fetchInteractionOpsguru(yesterday_ymd)
@@ -289,7 +290,7 @@ def getOpsguruResultByDate(date):
     softskill, softskillResponse = fetchSoftskillOpsguru(date)
     response['softskill'] = softskillResponse
     brcp, BrcpResponse = fetchBrcpOpsguru(date)
-    brcp = brcp.drop(['TL_Email_Id', 'Location', 'queuename1', 'agentemail1'], axis=1)
+    brcp = brcp.drop(['TL_Email_Id', 'Location', 'queuename1', 'agentemail1', 'freshdeskticketid'], axis=1)
 
     response['brcp'] = BrcpResponse
     interaction, interactionResponse = fetchInteractionOpsguru(date)
